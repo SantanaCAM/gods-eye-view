@@ -7,6 +7,10 @@ import {
 } from './military-installations/constants.js';
 import { fetchOverpassPayload } from './overpass/transport.js';
 import {
+  INSTALLATIONS_SOURCE,
+  fetchInstallationsFromTiles,
+} from './military-installations/tileSource.js';
+import {
   _militaryInstallationCache,
   trimMilitaryInstallationCache,
   writeMilitaryInstallationDisk,
@@ -33,10 +37,22 @@ function militaryInstallationsProxy() {
   async function refresh(box, key) {
     const bbox = `${box.south},${box.west},${box.north},${box.east}`;
     const ql = `[out:json][timeout:20];(nwr["military"~"^(airfield|naval_base|range|barracks|base)$"](${bbox});nwr["landuse"="military"](${bbox}););out center tags geom ${MILITARY_INSTALLATION_ELEMENT_CAP};`;
-    const upstream = await fetchOverpassPayload(
-      `data=${encodeURIComponent(ql)}`,
-      MILITARY_INSTALLATION_MAX_RESPONSE_BYTES,
-    );
+    // Vector tiles, not Overpass: every full-planet mirror refuses this
+    // deployment's IP, and this provider calls the transport DIRECTLY rather
+    // than through /api/overpass, so the road and ALPR fixes never reached it.
+    // Rationale, and what the tiles cannot recover (names, military= subtypes),
+    // in ./military-installations/tileSource.js. `ql` is still built above so
+    // the cache key and the overpass fallback keep their exact shape.
+    const upstream =
+      INSTALLATIONS_SOURCE === 'tiles'
+        ? await fetchInstallationsFromTiles(
+            box,
+            MILITARY_INSTALLATION_ELEMENT_CAP,
+          )
+        : await fetchOverpassPayload(
+            `data=${encodeURIComponent(ql)}`,
+            MILITARY_INSTALLATION_MAX_RESPONSE_BYTES,
+          );
     if (
       upstream.status >= 400 ||
       upstream.rateLimited ||
