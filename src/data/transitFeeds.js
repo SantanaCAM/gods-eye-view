@@ -127,6 +127,40 @@ function metroTransitRouteMode(routeId) {
  * }>>}
  */
 export const TRANSIT_FEED_REGISTRY = Object.freeze([
+  // Listed first deliberately: this deployment is localized to Modesto (see the
+  // CCTV district pinning in its AGENTS.md), so the local operator leads the
+  // credit and stats text rather than trailing seven feeds on other continents.
+  Object.freeze({
+    id: 'stanrta-modesto',
+    name: 'MAX',
+    operator: 'Stanislaus Regional Transit Authority (StanRTA)',
+    region: 'Modesto and Stanislaus County, CA',
+    center: Object.freeze({ lat: 37.6391, lon: -120.9969 }),
+    loadRadiusKm: 60,
+    url: 'https://stanrta.rideralerts.com/InfoPoint/GTFS-Realtime.ashx?Type=VehiclePosition',
+    license: 'Public agency GTFS datasets page, no licence text published',
+    licenseUrl: 'https://www.stanrta.org/431/GTFS-Information-Datasets',
+    attribution: 'Stanislaus Regional Transit Authority (StanRTA) - MAX',
+    defaultEnabled: true,
+    terms: Object.freeze({
+      quote:
+        'Datasets Available ... Real-Time GTFS - Vehicle Position ' +
+        'https://stanrta.rideralerts.com/InfoPoint/GTFS-Realtime.ashx?Type=VehiclePosition',
+      note:
+        'The agency publishes these exact URLs itself, on a page it titles GTFS ' +
+        'Information and Datasets, and attaches no licence text to them. Its ' +
+        'Copyright Notices page is empty boilerplate and its Privacy Policy says ' +
+        'nothing about data reuse, so there is no passage that grants or refuses ' +
+        'this use and the quote above is simply the publication. Enabled on the ' +
+        'same basis as the Metro Transit entry below: a public agency publishing ' +
+        'for developer consumption, credited as a courtesy. Verified keyless on ' +
+        '2026-09-21 - 58 vehicles, 57 inside the Stanislaus County bbox, with ' +
+        'real coordinates, bearing, speed and occupancy. Note the operator now ' +
+        'brands system-wide as The S; MAX is the Modesto service and the name ' +
+        'Cam asked for.',
+    }),
+    defaultMode: 'bus',
+  }),
   Object.freeze({
     id: 'mbta',
     historyRetention: true,
