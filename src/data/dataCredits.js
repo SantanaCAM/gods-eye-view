@@ -82,7 +82,8 @@ export const DATA_CREDITS = [
     html:
       'Road geometry (traffic): ' +
       '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a> ' +
-      '(ODbL 1.0)',
+      '(ODbL 1.0), served as vector tiles by ' +
+      '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a>',
   },
   {
     key: 'photon-geocoder',

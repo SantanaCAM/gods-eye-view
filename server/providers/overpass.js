@@ -19,6 +19,10 @@ import {
   fetchOverpassPayload,
 } from './overpass/transport.js';
 import { installRouteMiddleware } from './places/routes.js';
+import {
+  parseRoadQuery,
+  fetchRoadsFromTiles,
+} from './overpass/roadTiles.js';
 
 /** @type {Map<string,Promise>} In-flight Overpass requests keyed by normalized query body. */
 const _overpassInFlight = new Map();
@@ -155,7 +159,19 @@ function overpassProxy({ routing = {} } = {}) {
           return;
         }
         _overpassConcurrent += 1;
-        const requestPromise = fetchOverpassPayload(safeBody)
+        // Road fetches are served from vector tiles: every full-planet Overpass
+        // instance either refuses this deployment's IP with a bare Apache 406 or
+        // never answers, which hung the traffic layer at "LOADING" indefinitely.
+        // Rationale and measurements in ./overpass/roadTiles.js. Every OTHER
+        // query shape — CCTV around:, admin is_in, annotation pivots — still
+        // goes to the mirrors untouched, and so does everything downstream of
+        // here: cache write, coalescing, stale-serving and rate limiting.
+        const roadQuery = parseRoadQuery(safeBody);
+        const requestPromise = (
+          roadQuery
+            ? fetchRoadsFromTiles(roadQuery)
+            : fetchOverpassPayload(safeBody)
+        )
           .then((payload) => {
             // Only a 2xx is data. `< 500` cached every 4xx, so one mirror's
             // refusal was written to memory AND disk — and boundary-class
