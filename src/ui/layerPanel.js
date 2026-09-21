@@ -28,7 +28,7 @@ const PANEL_GROUPS = [
   },
   {
     label: 'Cameras',
-    ids: ['cctv', 'alpr-cameras'],
+    ids: ['cctv', 'alpr-cameras', 'flock-devices'],
   },
   {
     label: 'Infrastructure',
@@ -59,6 +59,7 @@ const PANEL_LABELS = {
   bikeshare: 'Bike Share',
   cctv: 'Cameras',
   'alpr-cameras': 'Mapped ALPR Cameras',
+  'flock-devices': 'Flock Devices',
   'local-datacenters': 'Data Centers',
   'local-firms': 'Active Fires',
 };

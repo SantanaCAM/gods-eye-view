@@ -8,6 +8,9 @@ import { buildOverpassQuery, normalizeAlprNode } from './records.js';
 /** Construct the bounded OSM request adapter without starting a request. */
 export function createOverpassAlprSource({
   fetchImpl = (...args) => globalThis.fetch(...args),
+  brand = null,
+  idPrefix = 'alpr',
+  label = 'OpenStreetMap · community mapped',
 } = {}) {
   async function fetchAlprNodes(box, signal) {
     signal?.throwIfAborted();
@@ -26,7 +29,9 @@ export function createOverpassAlprSource({
     ) {
       throw new TypeError('ALPR requires a bounded city viewport');
     }
-    const query = buildOverpassQuery(box.south, box.west, box.north, box.east);
+    const query = buildOverpassQuery(box.south, box.west, box.north, box.east, {
+      brand,
+    });
     const response = await fetchImpl(OVERPASS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -60,7 +65,7 @@ export function createOverpassAlprSource({
         ...new Map(
           payload.elements
             .slice(0, QUERY_LIMIT)
-            .map(normalizeAlprNode)
+            .map((element) => normalizeAlprNode(element, { idPrefix }))
             .filter(Boolean)
             .map((record) => [record.id, record]),
         ).values(),
@@ -71,7 +76,7 @@ export function createOverpassAlprSource({
   }
   return {
     fetch: fetchAlprNodes,
-    label: 'OpenStreetMap · community mapped',
+    label,
     attribution: {
       name: 'OpenStreetMap',
       description: 'OpenStreetMap contributors (ODbL 1.0; community mapped)',

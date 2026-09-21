@@ -23,6 +23,10 @@ import {
   parseRoadQuery,
   fetchRoadsFromTiles,
 } from './overpass/roadTiles.js';
+import {
+  parseAlprQuery,
+  fetchAlprFromDataset,
+} from './overpass/alprSource.js';
 
 /** @type {Map<string,Promise>} In-flight Overpass requests keyed by normalized query body. */
 const _overpassInFlight = new Map();
@@ -167,10 +171,13 @@ function overpassProxy({ routing = {} } = {}) {
         // goes to the mirrors untouched, and so does everything downstream of
         // here: cache write, coalescing, stale-serving and rate limiting.
         const roadQuery = parseRoadQuery(safeBody);
+        const alprQuery = roadQuery ? null : parseAlprQuery(safeBody);
         const requestPromise = (
           roadQuery
             ? fetchRoadsFromTiles(roadQuery)
-            : fetchOverpassPayload(safeBody)
+            : alprQuery
+              ? fetchAlprFromDataset(alprQuery)
+              : fetchOverpassPayload(safeBody)
         )
           .then((payload) => {
             // Only a 2xx is data. `< 500` cached every 4xx, so one mirror's

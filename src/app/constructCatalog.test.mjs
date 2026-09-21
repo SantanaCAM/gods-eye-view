@@ -39,7 +39,9 @@ test('catalogs construct distinct layers and classification from their supplied 
     signal: b.signal,
     surface: fixtureSurface(b.signal),
   });
-  assert.equal(first.layers.length, 21);
+  // 22 since 2026-09-21: the ALPR layer factory is instantiated twice,
+  // once for all mapped cameras and once for the Flock-only view.
+  assert.equal(first.layers.length, 22);
   assert.ok(first.get('transit'));
   const order = first.layers.map(({ id }) => id);
   assert.deepEqual(

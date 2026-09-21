@@ -18,6 +18,33 @@
 
 export const LAYER_ID = 'alpr-cameras';
 
+/**
+ * The Flock-only sibling layer. It is a SECOND INSTANCE of this same layer,
+ * differing only in the brand filter it sends and the ids it stamps on its
+ * records — not a copy of the code.
+ *
+ * Its record ids must not collide with the all-brands layer's, because a Flock
+ * camera appears in BOTH and the pick registry is keyed by entity id; with both
+ * toggles on, a shared prefix would register the same entity twice. Hence the
+ * separate prefix below.
+ */
+export const FLOCK_LAYER_ID = 'flock-devices';
+
+/** Record id prefix for the Flock layer — see FLOCK_LAYER_ID. */
+export const FLOCK_ID_PREFIX = 'flock';
+
+/**
+ * Brand match for the Flock layer, sent as a case-insensitive Overpass regex.
+ *
+ * NOT an exact `= 'Flock Safety'`. The OSM data carries at least fourteen
+ * spellings of this operator — `FlockSafety`, `flock`, `Flock Group Inc.`,
+ * `Flock Safety;Motorola Solutions`, `FLOCK SAFETY` among them. Measured
+ * 2026-09-21 against the national dataset: an exact match returns 114,460
+ * cameras and this pattern returns 114,560, so being strict would silently
+ * drop 100 real ones.
+ */
+export const FLOCK_BRAND_PATTERN = 'flock';
+
 export const OVERPASS_URL = '/api/overpass';
 
 export const REQUEST_DEBOUNCE_MS = 500;

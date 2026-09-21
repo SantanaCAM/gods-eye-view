@@ -14,6 +14,9 @@ import { createApplicationInstallations } from './layers/militaryInstallations.j
 import { createApplicationSatellites } from './layers/satellites.js';
 import { createApplicationLaunches } from './layers/rocketLaunches.js';
 import { createApplicationAlpr } from './layers/alprCameras.js';
+import {
+  FLOCK_LAYER_ID,
+} from '../layers/alpr/policy.js';
 import { createApplicationAwareness } from './layers/militaryAwareness.js';
 import { createApplicationFirms } from './layers/firms.js';
 import { createApplicationEarthquakes } from './layers/earthquakes.js';
@@ -112,6 +115,13 @@ export function createApplicationCatalog({
         military,
         createApplicationEarthquakes({ source: sources.earthquakes }),
         createApplicationAlpr({ surface, source: sources.alpr }),
+        createApplicationAlpr({
+          surface,
+          source: sources.alprFlock,
+          layerId: FLOCK_LAYER_ID,
+          layerName: 'Flock Devices',
+          icon: '🦅',
+        }),
         satellites,
         createApplicationLaunches({ source: sources.launches, satellites }),
         createApplicationTraffic({ source: sources.traffic }),

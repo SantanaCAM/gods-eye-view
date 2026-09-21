@@ -30,7 +30,13 @@ import { createAlprPresentation } from './presentation.js';
  * removeEntityContextsForLayer(layerId, { retainIds: Set<string> }), preserving
  * retained selection without dispatching a new selection event.
  */
-export function createAlprCamerasLayer({ source, services } = {}) {
+export function createAlprCamerasLayer({
+  source,
+  services,
+  layerId = LAYER_ID,
+  layerName = 'ALPR Cameras',
+  icon = '📷',
+} = {}) {
   if (typeof source?.fetch !== 'function')
     throw new TypeError('ALPR requires a camera source');
   const { governorRequestRender } = services.render;
@@ -38,6 +44,11 @@ export function createAlprCamerasLayer({ source, services } = {}) {
   const { registerPickOwner, unregisterPickOwner } = services.picking;
 
   const state = {
+    // Threaded through rather than read from the module constant, because this
+    // factory now builds two independent layers (all brands, and Flock only)
+    // whose entity contexts and pick ownership must not be confused for each
+    // other's. `presentation.js` reads state.layerId for the same reason.
+    layerId,
     viewer: null,
     dataSource: null,
     credit: null,
@@ -232,16 +243,16 @@ export function createAlprCamerasLayer({ source, services } = {}) {
   }
 
   const alprCamerasLayer = {
-    id: LAYER_ID,
-    name: 'ALPR Cameras',
-    icon: '📷',
+    id: layerId,
+    name: layerName,
+    icon,
     source: source.label || 'Mapped camera locations',
     updateInterval: 0,
     statsRefreshInterval: 1000,
     init(viewer) {
       if (state.viewer) throw new Error('ALPR layer is already initialized');
       state.viewer = viewer;
-      state.dataSource = new Cesium.CustomDataSource('alpr-cameras');
+      state.dataSource = new Cesium.CustomDataSource(layerId);
       const creditMarkup = alprCreditMarkup(source.attribution);
       state.credit = creditMarkup
         ? new Cesium.Credit(creditMarkup, true)
@@ -258,14 +269,14 @@ export function createAlprCamerasLayer({ source, services } = {}) {
       if (state.enabled) return;
       state.enabled = true;
       state.creditPresented = false;
-      registerPickOwner(LAYER_ID, (id) => state.recordById.has(id));
+      registerPickOwner(layerId, (id) => state.recordById.has(id));
       state.dataSource.show = true;
       // DataLayerManager calls update() right after enable(); it owns the first fetch.
     },
     disable() {
       state.enabled = false;
       hideOnMapCredit();
-      unregisterPickOwner(LAYER_ID);
+      unregisterPickOwner(layerId);
       clearUnavailableRetry();
       clearTimeout(state.debounceTimer);
       state.abort?.abort();

@@ -12,6 +12,10 @@ import { createInstallationSource } from '../layers/installations/source.js';
 import { createSatelliteSource } from '../layers/satellites/source.js';
 import { createLaunchSource } from '../layers/launches/source.js';
 import { createOverpassAlprSource } from '../layers/alpr/source.js';
+import {
+  FLOCK_BRAND_PATTERN,
+  FLOCK_ID_PREFIX,
+} from '../layers/alpr/policy.js';
 import { createFirmsSource } from '../layers/firms/source.js';
 import { createReferenceSources } from '../sources/reference.js';
 export { createReferenceSources as createStandaloneReferenceSources } from '../sources/reference.js';
@@ -34,6 +38,14 @@ export function createStandaloneLayerSources() {
     satellites: createSatelliteSource(),
     launches: createLaunchSource(),
     alpr: createOverpassAlprSource(),
+    // Same source module, filtered upstream to one brand. The server
+    // resolves the filter, so this fetches 45 cameras where the
+    // all-brands layer fetches 139 over the same viewport.
+    alprFlock: createOverpassAlprSource({
+      brand: FLOCK_BRAND_PATTERN,
+      idPrefix: FLOCK_ID_PREFIX,
+      label: 'OpenStreetMap · Flock Safety · community mapped',
+    }),
     firms: createFirmsSource(),
   };
 }
