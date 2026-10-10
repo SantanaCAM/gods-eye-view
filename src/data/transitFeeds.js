@@ -157,7 +157,7 @@ export const TRANSIT_FEED_REGISTRY = Object.freeze([
         '2026-09-21 - 58 vehicles, 57 inside the Stanislaus County bbox, with ' +
         'real coordinates, bearing, speed and occupancy. Note the operator now ' +
         'brands system-wide as The S; MAX is the Modesto service and the name ' +
-        'Cam asked for.',
+        'riders know it by.',
     }),
     defaultMode: 'bus',
   }),
