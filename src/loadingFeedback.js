@@ -31,7 +31,8 @@ export function normalizeLayerLoading(layer = {}) {
     stats.refreshing === true;
   const count = finiteCount(stats.count);
   const stoppingInstallations =
-    ['military-installations', ...CAMERA_LAYER_IDS].includes(layer.id) && disabling;
+    ['military-installations', ...CAMERA_LAYER_IDS].includes(layer.id) &&
+    disabling;
   // Guidance statuses ask the user to act (zoom in, run a search). They are
   // normal operation, never a batch failure — mirrors layerFeedState's carve-out
   // so a prompt stored alongside the status cannot turn the chip red.
@@ -387,7 +388,8 @@ export function presentLoadingFeedback(state, summary, nowMs) {
         !CAMERA_LAYER_IDS.includes(record.id) &&
         (state?.activeIds || []).includes(record.id) &&
         (record.error || record.unavailable || record.keyRequired),
-    ) || (state?.failedEventIds || []).some((id) => !CAMERA_LAYER_IDS.includes(id));
+    ) ||
+    (state?.failedEventIds || []).some((id) => !CAMERA_LAYER_IDS.includes(id));
   if (camera && !summary.active.length && !otherCameraFailure) {
     const seconds = Math.max(
       0,

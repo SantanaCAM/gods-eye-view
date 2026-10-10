@@ -161,3 +161,77 @@ test('both Google 3D routes keep tiles drawing while draped imagery loads', asyn
   assert.equal(calls[1][1].asynchronouslyLoadImagery, true);
   assert.equal(calls[1][1].enableCollision, true);
 });
+
+test('an http page gets Bing tiles over https, so the CSP does not blank the globe', async () => {
+  const originalImagery = Cesium.IonImageryProvider.fromAssetId;
+  const originalBing = Cesium.BingMapsImageryProvider.fromUrl;
+  const originalFetch = Cesium.Resource.prototype.fetchJson;
+  const calls = [];
+  let endpoint = {
+    type: 'IMAGERY',
+    externalType: 'BING',
+    options: {
+      url: 'https://dev.virtualearth.net',
+      key: 'k',
+      mapStyle: 'Aerial',
+    },
+  };
+  try {
+    Cesium.Resource.prototype.fetchJson = async function () {
+      calls.push({ kind: 'endpoint', url: this.url });
+      return endpoint;
+    };
+    Cesium.BingMapsImageryProvider.fromUrl = async (url, options) => {
+      calls.push({ kind: 'bing', url, options });
+      return { bing: true };
+    };
+    Cesium.IonImageryProvider.fromAssetId = async (id, options) => {
+      calls.push({ kind: 'ion', id, options });
+      return { ion: true };
+    };
+
+    const style = Cesium.IonWorldImageryStyle.AERIAL;
+    assert.deepEqual(
+      await createIonImagery(style, 't', { protocol: 'http:' }),
+      { bing: true },
+    );
+    assert.match(calls[0].url, /v1\/assets\/2\/endpoint\?access_token=t/);
+    assert.equal(calls[1].url, 'https://dev.virtualearth.net');
+    assert.deepEqual(calls[1].options, {
+      key: 'k',
+      mapStyle: 'Aerial',
+      tileProtocol: 'https',
+    });
+
+    // An https page keeps Cesium's own ion path and never fetches the endpoint itself.
+    calls.length = 0;
+    assert.deepEqual(
+      await createIonImagery(style, 't', { protocol: 'https:' }),
+      { ion: true },
+    );
+    assert.deepEqual(
+      calls.map(({ kind }) => kind),
+      ['ion'],
+    );
+
+    // A non-Bing ion imagery asset on an http page still goes through ion.
+    calls.length = 0;
+    endpoint = {
+      type: 'IMAGERY',
+      externalType: 'TMS',
+      options: { url: 'https://x' },
+    };
+    assert.deepEqual(
+      await createIonImagery(style, 't', { protocol: 'http:' }),
+      { ion: true },
+    );
+    assert.deepEqual(
+      calls.map(({ kind }) => kind),
+      ['endpoint', 'ion'],
+    );
+  } finally {
+    Cesium.IonImageryProvider.fromAssetId = originalImagery;
+    Cesium.BingMapsImageryProvider.fromUrl = originalBing;
+    Cesium.Resource.prototype.fetchJson = originalFetch;
+  }
+});
