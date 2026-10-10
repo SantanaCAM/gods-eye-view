@@ -9,6 +9,8 @@ import {
   DETAIL_MAX_TILES,
   SOURCE_RECORD_LIMIT,
   PRECISION_CACHE_LIMIT,
+  FLOCK_BRAND_PATTERN,
+  FLOCK_ID_PREFIX,
 } from './policy.js';
 import {
   createVectorTileSource,
@@ -191,6 +193,36 @@ export function createAlprTileSource({
       text: '© OpenStreetMap contributors, ODbL',
       href: 'https://www.openstreetmap.org/copyright',
     },
+  };
+}
+
+/**
+ * Flock-only view over the hourly extract: its own tile source instance (so the
+ * two layers never share a cache or a precision memory), filtered to records
+ * whose manufacturer or operator matches FLOCK_BRAND_PATTERN, with ids
+ * re-prefixed so they cannot collide with the all-brands layer's entities.
+ */
+export function createFlockTileSource({
+  base = createAlprTileSource(),
+  brand = FLOCK_BRAND_PATTERN,
+  idPrefix = FLOCK_ID_PREFIX,
+} = {}) {
+  const matches = (record) =>
+    brand.test(record.manufacturer || '') || brand.test(record.operator || '');
+  return {
+    async fetch(box, signal) {
+      const result = await base.fetch(box, signal);
+      return {
+        ...result,
+        records: result.records
+          .filter(matches)
+          .map((record) => ({ ...record, id: `${idPrefix}:${record.osmId}` })),
+      };
+    },
+    detailZoom: base.detailZoom,
+    destroy: () => base.destroy(),
+    label: 'OpenStreetMap · Flock Safety · community mapped',
+    attribution: base.attribution,
   };
 }
 

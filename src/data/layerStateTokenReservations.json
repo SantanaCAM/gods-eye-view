@@ -9,6 +9,7 @@
   ["earthquakes", "e"],
   ["fire-perimeters", "2"],
   ["flights", "f"],
+  ["flock-devices", "zz"],
   ["local-dams", "q"],
   ["local-datacenters", "d"],
   ["local-firms", "w"],

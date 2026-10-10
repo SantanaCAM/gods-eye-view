@@ -372,6 +372,9 @@ const layers = [
 export const VOICE_OFF_LAYERS = Object.freeze({
   'bhote-koshi-2026': 'scene-driven event layer (control_scene)',
   'bhote-koshi-locator': 'scene-driven event layer (control_scene)',
+  // Our fork's layer. Voice needs OPENAI_API_KEY, which this deployment leaves
+  // unset by decision; "flock cameras" still toggles the all-brands layer.
+  'flock-devices': 'fork-local Flock-only view of alpr-cameras',
 });
 
 const TYPE_NAMES = Object.freeze({

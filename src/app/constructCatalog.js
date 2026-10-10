@@ -20,6 +20,7 @@ import { createApplicationInstallations } from './layers/militaryInstallations.j
 import { createApplicationSatellites } from './layers/satellites.js';
 import { createApplicationLaunches } from './layers/rocketLaunches.js';
 import { createApplicationAlpr } from './layers/alprCameras.js';
+import { FLOCK_LAYER_ID } from '../layers/alpr/policy.js';
 import { createApplicationLocalAdsb } from './layers/localAdsb.js';
 import { createApplicationAwareness } from './layers/militaryAwareness.js';
 import { createApplicationFirms } from './layers/firms.js';
@@ -121,6 +122,13 @@ export function createApplicationCatalog({
           source: sources['fire-perimeters'],
         }),
         createApplicationAlpr({ surface, source: sources.alpr }),
+        createApplicationAlpr({
+          surface,
+          source: sources.alprFlock,
+          layerId: FLOCK_LAYER_ID,
+          layerName: 'Flock Devices',
+          icon: '🦅',
+        }),
         createApplicationStreetLevel({
           surface,
           sources: { mapillary: sources.mapillary },

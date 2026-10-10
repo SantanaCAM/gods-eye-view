@@ -1,5 +1,8 @@
 import { installationFeedback } from './data/installationFeedback.js';
 
+/** ALPR layers sharing the camera retry copy: all brands, and our Flock-only view. */
+const CAMERA_LAYER_IDS = ['alpr-cameras', 'flock-devices'];
+
 export const LOADING_REVEAL_DELAY_MS = 160;
 export const LOADING_TERMINAL_DWELL_MS = 2200;
 export const LOADING_FAILURE_DWELL_MS = 5000;
@@ -28,7 +31,7 @@ export function normalizeLayerLoading(layer = {}) {
     stats.refreshing === true;
   const count = finiteCount(stats.count);
   const stoppingInstallations =
-    ['military-installations', 'alpr-cameras'].includes(layer.id) && disabling;
+    ['military-installations', ...CAMERA_LAYER_IDS].includes(layer.id) && disabling;
   // Guidance statuses ask the user to act (zoom in, run a search). They are
   // normal operation, never a batch failure — mirrors layerFeedState's carve-out
   // so a prompt stored alongside the status cannot turn the chip red.
@@ -62,7 +65,7 @@ export function normalizeLayerLoading(layer = {}) {
     keyRequired,
     degraded,
     cameraRetry:
-      layer.id === 'alpr-cameras' && layer.enabled && !disabling
+      CAMERA_LAYER_IDS.includes(layer.id) && layer.enabled && !disabling
         ? {
             retryAt: Number(stats.retryAt) || 0,
             retrying: stats.retrying === true,
@@ -381,10 +384,10 @@ export function presentLoadingFeedback(state, summary, nowMs) {
   const otherCameraFailure =
     summary.records.some(
       (record) =>
-        record.id !== 'alpr-cameras' &&
+        !CAMERA_LAYER_IDS.includes(record.id) &&
         (state?.activeIds || []).includes(record.id) &&
         (record.error || record.unavailable || record.keyRequired),
-    ) || (state?.failedEventIds || []).some((id) => id !== 'alpr-cameras');
+    ) || (state?.failedEventIds || []).some((id) => !CAMERA_LAYER_IDS.includes(id));
   if (camera && !summary.active.length && !otherCameraFailure) {
     const seconds = Math.max(
       0,

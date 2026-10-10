@@ -607,6 +607,13 @@ export const LAYER_STATE_REGISTRY = Object.freeze([
     disposition: 'enabled+options',
     optionOwner: 'flights',
   }),
+  Object.freeze({
+    id: 'flock-devices',
+    // Our fork's layer. 'zz' is the last token upstream's allocator would ever
+    // reach, so an upstream layer can never be handed the same share-link token.
+    token: 'zz',
+    disposition: 'enabled-only',
+  }),
   Object.freeze({ id: 'local-dams', token: 'q', disposition: 'enabled-only' }),
   Object.freeze({
     id: 'local-datacenters',

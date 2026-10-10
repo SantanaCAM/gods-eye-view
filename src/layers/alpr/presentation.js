@@ -1,7 +1,6 @@
 import * as Cesium from 'cesium';
 import { isPointerFree } from '../../data/inputOwnership.js';
 import {
-  LAYER_ID,
   MAX_VIEWPORT_DEGREES,
   MAX_RENDERED,
   ALPR_COLOR,
@@ -310,11 +309,11 @@ export function createAlprPresentation({ state, services, source }) {
     visibleRecords = [];
     clampedMarkers.clear();
     if (state.dataSource?.entities) state.dataSource.entities.removeAll();
-    removeEntityContextsForLayer(LAYER_ID);
+    removeEntityContextsForLayer(state.layerId);
   }
 
   function hideOnMapCredit() {
-    services.credits?.hideOsmCredit?.(state.viewer, LAYER_ID);
+    services.credits?.hideOsmCredit?.(state.viewer, state.layerId);
     clearTimeout(state.creditTimer);
     state.creditTimer = null;
     if (state.credit)
@@ -328,7 +327,7 @@ export function createAlprPresentation({ state, services, source }) {
       source.attribution?.name === 'OpenStreetMap' &&
       services.credits?.showOsmCredit
     ) {
-      services.credits.showOsmCredit(state.viewer, LAYER_ID);
+      services.credits.showOsmCredit(state.viewer, state.layerId);
       return;
     }
     if (!state.enabled || state.creditPresented || !state.credit) return;
@@ -348,12 +347,12 @@ export function createAlprPresentation({ state, services, source }) {
     // A refresh may retain its own selection, never reclaim one cleared or
     // replaced by an aircraft, another layer, or a voice action.
     if (
-      selectedContext?.layerId !== LAYER_ID ||
+      selectedContext?.layerId !== state.layerId ||
       selectedContext.id !== state.selectedId ||
       !visible.some((record) => record.id === state.selectedId)
     ) {
       state.selectedId = null;
-      clearSelectedEntityContextForLayer(LAYER_ID);
+      clearSelectedEntityContextForLayer(state.layerId);
     }
     governorRequestRender('alpr-render');
     const visibleIds = new Set(visible.map((record) => record.id));
@@ -366,7 +365,7 @@ export function createAlprPresentation({ state, services, source }) {
         changed = true;
       }
     }
-    removeEntityContextsForLayer(LAYER_ID, { retainIds: visibleIds });
+    removeEntityContextsForLayer(state.layerId, { retainIds: visibleIds });
     for (const record of visible) {
       const existing = state.dataSource.entities.getById(record.id);
       if (existing?.gevAlprRecord === record) {
@@ -446,7 +445,7 @@ export function createAlprPresentation({ state, services, source }) {
       updateAppearance(entity, selected);
       registerEntityContext(entity, {
         id: record.id,
-        layerId: LAYER_ID,
+        layerId: state.layerId,
         dataSource: state.dataSource,
         layerName: 'ALPR Cameras',
         source:
@@ -562,7 +561,7 @@ export function createAlprPresentation({ state, services, source }) {
     state.selectedId = null;
     selectionStartedAt = 0;
     overlay.sync(visibleRecords);
-    clearSelectedEntityContextForLayer(LAYER_ID);
+    clearSelectedEntityContextForLayer(state.layerId);
     governorRequestRender('alpr-selection');
   }
 
