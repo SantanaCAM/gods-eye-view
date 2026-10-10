@@ -1,5 +1,8 @@
-import { keylessHudSummaryResponse } from '../../../src/hudSummaryResponse.js';
-import { enforceOptInRateLimit, openAiRateLimiter } from './rate-limit.js';
+import {
+  HUD_SUMMARY_INSTRUCTIONS,
+  keylessHudSummaryResponse,
+} from '../../../src/hudSummaryResponse.js';
+import { enforceRateLimit, openAiRateLimiter } from './rate-limit.js';
 import { readRequestBody } from '../common/request.js';
 import { OPENAI_HUD_SUMMARY_MODEL_DEFAULT } from './constants.js';
 
@@ -43,10 +46,10 @@ async function handleHudSummary(req, res) {
     return;
   }
 
-  // Opt-in per-IP throttle (GEV_RATELIMIT_OPENAI_PER_MIN). Keyless HUD
-  // fallback has no provider cost and resolves above without consuming a
-  // paid-endpoint quota slot.
-  if (!enforceOptInRateLimit(openAiRateLimiter(), req, res)) return;
+  // Per-IP throttle (GEV_RATELIMIT_OPENAI_PER_MIN). On by default; 0 disables.
+  // Keyless HUD fallback has no provider cost and resolves above without
+  // consuming a paid-endpoint quota slot.
+  if (!enforceRateLimit(openAiRateLimiter(), req, res)) return;
 
   try {
     const body = await readRequestBody(req, 64 * 1024);
@@ -61,13 +64,7 @@ async function handleHudSummary(req, res) {
         model:
           process.env.OPENAI_HUD_SUMMARY_MODEL ||
           OPENAI_HUD_SUMMARY_MODEL_DEFAULT,
-        instructions: [
-          "Write one concise intelligence-HUD summary for God's Eye View.",
-          'Use only the supplied place, street, nearby-place, and enabled-layer text labels.',
-          'Prefer the clearest named place and include a relevant enabled layer only when useful.',
-          'Do not infer from coordinates or invent a place.',
-          'Output exactly five words with no title, punctuation, markdown, or introductory phrase.',
-        ].join(' '),
+        instructions: HUD_SUMMARY_INSTRUCTIONS,
         input: JSON.stringify(context),
         reasoning: { effort: 'minimal' },
         max_output_tokens: 100,

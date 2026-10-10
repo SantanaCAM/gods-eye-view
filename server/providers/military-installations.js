@@ -5,11 +5,11 @@ import {
   MILITARY_INSTALLATION_DISK_TTL_MS,
   MILITARY_INSTALLATION_STALE_MS,
 } from './military-installations/constants.js';
-import { fetchOverpassPayload } from './overpass/transport.js';
 import {
-  INSTALLATIONS_SOURCE,
-  fetchInstallationsFromTiles,
-} from './military-installations/tileSource.js';
+  fetchOverpassPayload,
+  overpassNotConfigured,
+} from './overpass/transport.js';
+import { resolveOverpassUpstreams } from './overpass/constants.js';
 import {
   _militaryInstallationCache,
   trimMilitaryInstallationCache,
@@ -37,22 +37,10 @@ function militaryInstallationsProxy() {
   async function refresh(box, key) {
     const bbox = `${box.south},${box.west},${box.north},${box.east}`;
     const ql = `[out:json][timeout:20];(nwr["military"~"^(airfield|naval_base|range|barracks|base)$"](${bbox});nwr["landuse"="military"](${bbox}););out center tags geom ${MILITARY_INSTALLATION_ELEMENT_CAP};`;
-    // Vector tiles, not Overpass: every full-planet mirror refuses this
-    // deployment's IP, and this provider calls the transport DIRECTLY rather
-    // than through /api/overpass, so the road and ALPR fixes never reached it.
-    // Rationale, and what the tiles cannot recover (names, military= subtypes),
-    // in ./military-installations/tileSource.js. `ql` is still built above so
-    // the cache key and the overpass fallback keep their exact shape.
-    const upstream =
-      INSTALLATIONS_SOURCE === 'tiles'
-        ? await fetchInstallationsFromTiles(
-            box,
-            MILITARY_INSTALLATION_ELEMENT_CAP,
-          )
-        : await fetchOverpassPayload(
-            `data=${encodeURIComponent(ql)}`,
-            MILITARY_INSTALLATION_MAX_RESPONSE_BYTES,
-          );
+    const upstream = await fetchOverpassPayload(
+      `data=${encodeURIComponent(ql)}`,
+      MILITARY_INSTALLATION_MAX_RESPONSE_BYTES,
+    );
     if (
       upstream.status >= 400 ||
       upstream.rateLimited ||
@@ -61,6 +49,7 @@ function militaryInstallationsProxy() {
       throw Object.assign(
         new Error('Mapped installation upstream unavailable'),
         {
+          retryAfterMs: upstream.retryAfterMs,
           installationReason: upstream.rateLimited
             ? 'rate_limited'
             : upstream.status === 504
@@ -99,14 +88,6 @@ function militaryInstallationsProxy() {
         res.end(JSON.stringify({ error: 'Method Not Allowed' }));
         return;
       }
-      if (!_militaryInstallationsRateLimiter(clientKey(req))) {
-        res.writeHead(429, {
-          'Content-Type': 'application/json',
-          'Retry-After': '5',
-        });
-        res.end(JSON.stringify({ error: 'Rate limit exceeded' }));
-        return;
-      }
       const url = new URL(req.url, 'http://localhost');
       const requested = validMilitaryInstallationBox(url.searchParams);
       if (!requested) {
@@ -133,6 +114,36 @@ function militaryInstallationsProxy() {
         : militaryInstallationCacheKey(box);
       const now = Date.now();
       const cached = _militaryInstallationCache.get(key);
+      if (!resolveOverpassUpstreams().length) {
+        const stale =
+          cached || (await readMilitaryInstallationDisk(key, Infinity));
+        const disabled = overpassNotConfigured();
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+          'X-Military-Installations': stale ? 'STALE' : 'DISABLED',
+        });
+        res.end(
+          stale
+            ? JSON.stringify({
+                ...stale.payload,
+                status: 'stale',
+                retrievedAt:
+                  stale.payload.retrievedAt ||
+                  new Date(stale.cachedAt).toISOString(),
+              })
+            : disabled.body,
+        );
+        return;
+      }
+      if (!_militaryInstallationsRateLimiter(clientKey(req))) {
+        res.writeHead(429, {
+          'Content-Type': 'application/json',
+          'Retry-After': '5',
+        });
+        res.end(JSON.stringify({ error: 'Rate limit exceeded' }));
+        return;
+      }
       const preflight = await resolveMilitaryInstallationTier({
         cacheKey: key,
         memoryCache: _militaryInstallationCache,
@@ -192,6 +203,9 @@ function militaryInstallationsProxy() {
           return;
         }
         res.writeHead(503, {
+          ...(error?.retryAfterMs
+            ? { 'Retry-After': String(Math.ceil(error.retryAfterMs / 1000)) }
+            : {}),
           'Content-Type': 'application/json',
           'Cache-Control': 'no-store',
         });
@@ -199,6 +213,7 @@ function militaryInstallationsProxy() {
           JSON.stringify({
             error: 'Mapped installation context is temporarily unavailable',
             reason: militaryInstallationFailureReason(error),
+            retryAfterMs: error?.retryAfterMs,
           }),
         );
       }

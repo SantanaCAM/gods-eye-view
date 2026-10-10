@@ -68,7 +68,7 @@ export function isAlprSurveillanceType(value) {
 }
 
 /** Map one raw Overpass node element to a plain camera record. Null for anything unusable. */
-export function normalizeAlprNode(el, { idPrefix = 'alpr' } = {}) {
+export function normalizeAlprNode(el) {
   if (
     !el ||
     el.type !== 'node' ||
@@ -83,7 +83,7 @@ export function normalizeAlprNode(el, { idPrefix = 'alpr' } = {}) {
   const tags = el.tags || {};
   if (!isAlprSurveillanceType(tags['surveillance:type'])) return null;
   return {
-    id: `${idPrefix}:${el.id}`,
+    id: `alpr:${el.id}`,
     osmId: el.id,
     latitude: el.lat,
     longitude: el.lon,
@@ -115,20 +115,10 @@ export function normalizeDirection(value) {
  * `surveillance:type=camera;ALPR` are common and an exact match drops them.
  * Exported so the query shape is pinnable.
  */
-export function buildOverpassQuery(
-  south,
-  west,
-  north,
-  east,
-  { brand = null } = {},
-) {
-  // The brand filter sits between the type selector and the bbox so the
-  // whole query stays ONE bounded statement — the shared proxy rejects a
-  // query whose selectors are not each individually bounded.
-  const brandFilter = brand ? `["brand"~"${brand}",i]` : '';
+export function buildOverpassQuery(south, west, north, east) {
   return (
     `[out:json][timeout:20];node["man_made"="surveillance"]["surveillance:type"~"(^|;)\\s*ALPR\\s*(;|$)",i]` +
-    `${brandFilter}(${south},${west},${north},${east});out body ${QUERY_LIMIT};`
+    `(${south},${west},${north},${east});out body ${QUERY_LIMIT};`
   );
 }
 
